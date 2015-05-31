@@ -2,6 +2,37 @@
 
 import argparse
 import sys
+import requests
+
+def get_comments(user):
+	StrRequestHeaders = {'user-agent':'https://github.com/bradcburns/Get-Reddit-Posted-Photos/'}
+	StrCommentsAPIURL = ("http://reddit.com/" +
+		"user/" + user + "/comments.json")
+
+	r = requests.get(StrCommentsAPIURL,headers=StrRequestHeaders)
+
+	if r.status_code == 404:
+		raise Exception('user ' + user + ' was not found in Reddit. ' +
+			'Verify the spelling and try again.')
+
+	JsonResponse = r.json()
+
+	#Yes, Reddit calls it a "thing", the following variable name isn't just a
+	#lazy naming convention on my part.
+
+	JsonResponseNextThing = JsonResponse['data']['after']
+
+	while JsonResponseNextThing:
+		r = requests.get(StrCommentsAPIURL,headers=StrRequestHeaders,params={'after':JsonResponseNextThing})
+
+		print r.text
+
+		JsonResponse = r.json()
+
+		JsonResponseNextThing = JsonResponse['data']['after']
+
+	print 'done'
+
 
 def verify_args(args):
 	return True
@@ -49,6 +80,8 @@ def main():
 		raise Exception('A command-line argument is missing or '
 			'improperly entered. Use the --help argument and '
 			'verify your usage.')
+
+	get_comments(args.user)
 
 
 if __name__ == "__main__":
