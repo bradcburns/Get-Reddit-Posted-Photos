@@ -185,7 +185,11 @@ def main():
 		StrHTML = GetLinksInHTML(ListImageLinks,args)
 		WriteStringToFile(args.user + '_' + str(time.time()) + '.html', StrHTML)
 	elif args.output == 'csv':
-		pass
+		#Note that this doesn't properly account for commas
+		#that already exist in links prior to the join.
+		StrCSV = ','.join(ListImageLinks)
+		WriteStringToFile(args.user + '_' + str(time.time()) + '.csv', StrCSV)
+
 
 
 if __name__ == "__main__":
