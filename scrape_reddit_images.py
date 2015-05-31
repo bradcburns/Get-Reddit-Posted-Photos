@@ -5,6 +5,9 @@ import sys
 import requests
 
 def get_comments(user):
+
+	ListComments = []
+
 	StrRequestHeaders = {'user-agent':'https://github.com/bradcburns/Get-Reddit-Posted-Photos/'}
 	StrCommentsAPIURL = ("http://reddit.com/" +
 		"user/" + user + "/comments.json")
@@ -25,14 +28,74 @@ def get_comments(user):
 	while JsonResponseNextThing:
 		r = requests.get(StrCommentsAPIURL,headers=StrRequestHeaders,params={'after':JsonResponseNextThing})
 
-		print r.text
+		#print r.text
+		print 'iterating...'
 
 		JsonResponse = r.json()
 
+		for comment in JsonResponse['data']['children']:
+			ListComments.append(comment)
+
 		JsonResponseNextThing = JsonResponse['data']['after']
 
-	print 'done'
+	return ListComments
 
+def GetImageURLsFromComment(comment):
+	print 'scraping through comments for image links...'
+	ListImageURLs = []
+
+	StrCommentText = comment['data']['body']
+
+	print 'checking comment ' + StrCommentText + ' for image links'
+
+	ListImageFileExtensions = ([
+		'.jpg','.jpeg','.png',
+		'.tif','.tiff','.gif',
+		'.gifv'])
+
+	#Instantiate a variable that we will use to store
+	#the location of an image file extension if we find
+	#it.
+	IntExtensionIndexFound = 0
+	IntHTTPIndexFound = 0
+
+	for extension in ListImageFileExtensions:
+		print 'checking for imagetype ' + extension
+		#find one of the extensions in the comment's body, starting with
+		#where the last extension is found. first search starts at 0
+		#per the variable IntExtensionIndexFound's instatiation above.
+		IntExtensionIndexFound = StrCommentText.find(extension)
+		while IntExtensionIndexFound > -1:
+
+			print 'found extension ' + extension + ' at index ' + str(IntExtensionIndexFound)
+			
+			#search backwards in the string from where
+			#we found the file extension for the beginning
+			#of a URL. if we didn't find it, then exit
+			#because there won't be a useful URL. sadface.jpg
+			IntHTTPIndexFound = StrCommentText.rfind('http',
+				0,IntExtensionIndexFound)
+			
+			if IntHTTPIndexFound > -1:
+				#Skip if there's a space between the http and the image extension
+				#the characters in between are likely not an image link.
+				IntSpaceFound = StrCommentText.find(' ',IntHTTPIndexFound,IntExtensionIndexFound)
+				if IntSpaceFound > -1:
+					print 'space before http found in ' + StrCommentText 
+					IntExtensionIndexFound = StrCommentText.find(extension,0,IntExtensionIndexFound)
+					continue
+			else:
+				#if there's no http found, then just search for the next image link
+				IntExtensionIndexFound = StrCommentText.find(extension,0,IntExtensionIndexFound)
+				continue
+
+			#slice out the image url and store it
+			StrImageURL = StrCommentText[IntHTTPIndexFound:IntExtensionIndexFound + len(extension)]
+			ListImageURLs.append(StrImageURL)
+
+			IntExtensionIndexFound = StrCommentText.find(extension,0,IntExtensionIndexFound)
+
+	return ListImageURLs
 
 def verify_args(args):
 	return True
@@ -81,7 +144,15 @@ def main():
 			'improperly entered. Use the --help argument and '
 			'verify your usage.')
 
-	get_comments(args.user)
+	ListComments = get_comments(args.user)
+
+	ListImageLinks = []
+
+	for comment in ListComments:
+		links = GetImageURLsFromComment(comment)
+		ListImageLinks.extend(links)
+
+	print ListImageLinks
 
 
 if __name__ == "__main__":
