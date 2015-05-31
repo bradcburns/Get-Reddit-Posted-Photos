@@ -14,6 +14,8 @@ def get_comments(user):
 
 	ListComments = []
 
+
+	#TODO make this user-agent string session-unique.
 	StrRequestHeaders = {'user-agent':'https://github.com/bradcburns/Get-Reddit-Posted-Photos/'}
 	StrCommentsAPIURL = ("http://reddit.com/" +
 		"user/" + user + "/comments.json")
@@ -31,11 +33,10 @@ def get_comments(user):
 
 	JsonResponseNextThing = JsonResponse['data']['after']
 
+	#While Reddit is still telling us there are more pages of comments,
+	#request the next page and store it.
 	while JsonResponseNextThing:
 		r = requests.get(StrCommentsAPIURL,headers=StrRequestHeaders,params={'after':JsonResponseNextThing})
-
-		#print r.text
-		print 'iterating...'
 
 		JsonResponse = r.json()
 
@@ -52,8 +53,6 @@ def GetImageURLsFromComment(comment):
 
 	StrCommentText = comment['data']['body']
 
-	print 'checking comment ' + StrCommentText + ' for image links'
-
 	ListImageFileExtensions = ([
 		'.jpg','.jpeg','.png',
 		'.tif','.tiff','.gif',
@@ -66,14 +65,11 @@ def GetImageURLsFromComment(comment):
 	IntHTTPIndexFound = 0
 
 	for extension in ListImageFileExtensions:
-		print 'checking for imagetype ' + extension
 		#find one of the extensions in the comment's body, starting with
 		#where the last extension is found. first search starts at 0
 		#per the variable IntExtensionIndexFound's instatiation above.
 		IntExtensionIndexFound = StrCommentText.find(extension)
 		while IntExtensionIndexFound > -1:
-
-			print 'found extension ' + extension + ' at index ' + str(IntExtensionIndexFound)
 			
 			#search backwards in the string from where
 			#we found the file extension for the beginning
