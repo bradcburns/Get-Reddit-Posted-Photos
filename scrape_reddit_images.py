@@ -3,6 +3,12 @@
 import argparse
 import sys
 import requests
+import time
+
+def WriteStringToFile(filename,string):
+	with open(filename,'w') as filo:
+		filo.write(string)
+	return True
 
 def get_comments(user):
 
@@ -97,6 +103,29 @@ def GetImageURLsFromComment(comment):
 
 	return ListImageURLs
 
+def GetLinksInHTML(urls,args):
+	StrHTMLHeader = (
+		'<html>'
+		'<head>'
+		'<title>Reddit Image Links for {user}</title>'
+		'</head>'
+		'<body>'.format(user=args.user))
+
+	StrHTMLBody = ''
+
+	if not urls:
+		StrHTMLBody = ("woah, doesn't look" 
+			"like {user} posted any links.".format(user=args.user))
+	else:
+		for link in urls:
+			StrHTMLBody += ('<img src="{imagelink}'
+				'">'.format(imagelink=link))
+	StrHTMLFooter = '</body></html>'
+
+	ret = StrHTMLHeader + StrHTMLBody + StrHTMLFooter
+
+	return ret
+
 def verify_args(args):
 	return True
 
@@ -152,7 +181,11 @@ def main():
 		links = GetImageURLsFromComment(comment)
 		ListImageLinks.extend(links)
 
-	print ListImageLinks
+	if args.output == 'html':
+		StrHTML = GetLinksInHTML(ListImageLinks,args)
+		WriteStringToFile(args.user + '_' + str(time.time()) + '.html', StrHTML)
+	elif args.output == 'csv':
+		pass
 
 
 if __name__ == "__main__":
